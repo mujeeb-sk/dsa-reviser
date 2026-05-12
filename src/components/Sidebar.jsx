@@ -46,7 +46,7 @@ export default function Sidebar({
       <div className="p-4 border-b border-gray-200 dark:border-gray-800 space-y-3">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span className="text-xl">📚</span> DSA Reviser
+            <img src="/favicon.svg" alt="logo" className="w-6 h-6" /> DSA Reviser
           </h1>
           <ThemeToggle />
         </div>
