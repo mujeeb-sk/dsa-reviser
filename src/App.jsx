@@ -1,40 +1,138 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import problems from "./problems.json";
 import Sidebar from "./components/Sidebar";
 import ProblemView from "./components/ProblemView";
 import StatsBar from "./components/StatsBar";
+import { recordActivity, getStreak } from "./streak";
 
-/** Load revised set from localStorage */
-function loadRevised() {
+// ── localStorage helpers ──
+
+function loadJSON(key, fallback) {
   try {
-    const raw = localStorage.getItem("dsa-revised");
-    return raw ? new Set(JSON.parse(raw)) : new Set();
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
   } catch {
-    return new Set();
+    return fallback;
   }
+}
+
+function saveJSON(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+/** revised: { [id]: timestamp } */
+function loadRevised() {
+  const raw = loadJSON("dsa-revised", null);
+  if (!raw) return {};
+  // migrate from old Set-based format [id, id, ...]
+  if (Array.isArray(raw)) {
+    const obj = {};
+    for (const id of raw) obj[id] = Date.now();
+    saveJSON("dsa-revised", obj);
+    return obj;
+  }
+  return raw;
 }
 
 export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("all"); // all | easy | medium | hard
   const [revised, setRevised] = useState(loadRevised);
+  const [favorites, setFavorites] = useState(() => new Set(loadJSON("dsa-favorites", [])));
+  const [notes, setNotes] = useState(() => loadJSON("dsa-notes", {}));
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [streak, setStreak] = useState(getStreak);
 
-  /** Persist revised set */
-  const toggleRevised = useCallback(
-    (id) => {
-      setRevised((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        localStorage.setItem("dsa-revised", JSON.stringify([...next]));
-        return next;
-      });
-    },
-    []
-  );
+  const searchRef = useRef(null);
 
-  /** Group problems by category */
+  // ── Revised ──
+  const toggleRevised = useCallback((id) => {
+    setRevised((prev) => {
+      const next = { ...prev };
+      if (next[id]) {
+        delete next[id];
+      } else {
+        next[id] = Date.now();
+        recordActivity();
+        setStreak(getStreak());
+      }
+      saveJSON("dsa-revised", next);
+      return next;
+    });
+  }, []);
+
+  // ── Favorites ──
+  const toggleFavorite = useCallback((id) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      saveJSON("dsa-favorites", [...next]);
+      return next;
+    });
+  }, []);
+
+  // ── Notes ──
+  const updateNote = useCallback((id, text) => {
+    setNotes((prev) => {
+      const next = { ...prev };
+      if (text.trim()) next[id] = text;
+      else delete next[id];
+      saveJSON("dsa-notes", next);
+      return next;
+    });
+  }, []);
+
+  // ── Export / Import ──
+  const exportData = useCallback(() => {
+    const streakDates = JSON.parse(localStorage.getItem("dsa-streak-dates") || "[]");
+    const data = {
+      revised,
+      favorites: [...favorites],
+      notes,
+      streakDates,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dsa-reviser-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [revised, favorites, notes]);
+
+  const importData = useCallback((file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.revised) {
+          setRevised(data.revised);
+          saveJSON("dsa-revised", data.revised);
+        }
+        if (data.favorites) {
+          setFavorites(new Set(data.favorites));
+          saveJSON("dsa-favorites", data.favorites);
+        }
+        if (data.notes) {
+          setNotes(data.notes);
+          saveJSON("dsa-notes", data.notes);
+        }
+        if (data.streakDates) {
+          localStorage.setItem("dsa-streak-dates", JSON.stringify(data.streakDates));
+          setStreak(getStreak());
+        }
+        alert("Import successful!");
+      } catch {
+        alert("Invalid backup file.");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  // ── Grouping & filtering ──
   const grouped = useMemo(() => {
     const map = new Map();
     for (const p of problems) {
@@ -44,31 +142,110 @@ export default function App() {
     return map;
   }, []);
 
-  /** Filter by search */
   const filtered = useMemo(() => {
-    if (!search.trim()) return grouped;
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     const map = new Map();
     for (const [cat, items] of grouped) {
-      const hits = items.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-      );
+      const hits = items.filter((p) => {
+        // difficulty filter
+        if (difficultyFilter !== "all") {
+          const d = (p.difficulty || "").toLowerCase();
+          if (d !== difficultyFilter) return false;
+        }
+        // text search
+        if (q) {
+          return (
+            p.title.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      });
       if (hits.length) map.set(cat, hits);
     }
     return map;
-  }, [grouped, search]);
+  }, [grouped, search, difficultyFilter]);
+
+  /** Flat list of currently visible problem ids (for keyboard nav) */
+  const flatIds = useMemo(() => {
+    const ids = [];
+    for (const items of filtered.values()) {
+      for (const p of items) ids.push(p.id);
+    }
+    return ids;
+  }, [filtered]);
 
   const selected = problems.find((p) => p.id === selectedId) || null;
 
+  // ── Random problem picker ──
+  const pickRandom = useCallback(() => {
+    const unrevised = problems.filter((p) => !revised[p.id]);
+    const pool = unrevised.length > 0 ? unrevised : problems;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setSelectedId(pick.id);
+    setSidebarOpen(false);
+  }, [revised]);
+
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    function handleKey(e) {
+      const tag = (e.target.tagName || "").toLowerCase();
+      const isInput = tag === "input" || tag === "textarea" || e.target.isContentEditable;
+
+      // "/" to focus search (works always)
+      if (e.key === "/" && !isInput) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+
+      // Escape to blur search
+      if (e.key === "Escape" && isInput) {
+        e.target.blur();
+        return;
+      }
+
+      if (isInput) return;
+
+      // "r" to toggle revised
+      if (e.key === "r" && selectedId) {
+        e.preventDefault();
+        toggleRevised(selectedId);
+        return;
+      }
+
+      // "f" to toggle favorite
+      if (e.key === "f" && selectedId) {
+        e.preventDefault();
+        toggleFavorite(selectedId);
+        return;
+      }
+
+      // Arrow Up / Down or j / k to navigate
+      if (["ArrowUp", "ArrowDown", "j", "k"].includes(e.key)) {
+        e.preventDefault();
+        const currentIdx = flatIds.indexOf(selectedId);
+        let nextIdx;
+        if (e.key === "ArrowDown" || e.key === "j") {
+          nextIdx = currentIdx < flatIds.length - 1 ? currentIdx + 1 : 0;
+        } else {
+          nextIdx = currentIdx > 0 ? currentIdx - 1 : flatIds.length - 1;
+        }
+        setSelectedId(flatIds[nextIdx]);
+      }
+    }
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selectedId, flatIds, toggleRevised, toggleFavorite]);
+
   return (
-    <div className="flex h-screen bg-gray-950 text-gray-200">
+    <div className="flex h-screen bg-gray-50 text-gray-800 dark:bg-gray-950 dark:text-gray-200">
       {/* Mobile toggle */}
       <button
         onClick={() => setSidebarOpen((v) => !v)}
-        className="fixed top-3 left-3 z-50 md:hidden bg-gray-800 p-2 rounded-lg"
+        className="fixed top-3 left-3 z-50 md:hidden bg-white dark:bg-gray-800 p-2 rounded-lg shadow"
         aria-label="Toggle sidebar"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,26 +260,56 @@ export default function App() {
         onSelect={(id) => { setSelectedId(id); setSidebarOpen(false); }}
         search={search}
         onSearch={setSearch}
+        searchRef={searchRef}
         revised={revised}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
         open={sidebarOpen}
+        difficultyFilter={difficultyFilter}
+        onDifficultyFilter={setDifficultyFilter}
+        problems={problems}
       />
 
       {/* Main area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <StatsBar total={problems.length} revised={revised} grouped={grouped} />
+        <StatsBar
+          total={problems.length}
+          revised={revised}
+          grouped={grouped}
+          onPickRandom={pickRandom}
+          onExport={exportData}
+          onImport={importData}
+          streak={streak}
+        />
         {selected ? (
           <ProblemView
             problem={selected}
-            revised={revised.has(selected.id)}
+            revised={!!revised[selected.id]}
+            revisedAt={revised[selected.id] || null}
             onToggleRevised={() => toggleRevised(selected.id)}
+            favorited={favorites.has(selected.id)}
+            onToggleFavorite={() => toggleFavorite(selected.id)}
+            note={notes[selected.id] || ""}
+            onUpdateNote={(text) => updateNote(selected.id, text)}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-2">DSA Reviser</h2>
+              <h2 className="text-2xl font-semibold mb-2 text-gray-700 dark:text-gray-300">DSA Reviser</h2>
               <p>Select a problem from the sidebar to start revising</p>
-              <p className="text-sm mt-4 text-gray-600">
-                {problems.length} problems · {revised.size} revised
+              <p className="text-sm mt-4 text-gray-400 dark:text-gray-600">
+                {problems.length} problems · {Object.keys(revised).length} revised
+              </p>
+              <div className="mt-6">
+                <button
+                  onClick={pickRandom}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  🎲 Pick Random Problem
+                </button>
+              </div>
+              <p className="text-xs mt-8 text-gray-400 dark:text-gray-600">
+                Shortcuts: <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-[10px]">↑↓</kbd> navigate · <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-[10px]">r</kbd> revised · <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-[10px]">f</kbd> favorite · <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-800 rounded text-[10px]">/</kbd> search
               </p>
             </div>
           </div>

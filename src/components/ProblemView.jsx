@@ -1,11 +1,36 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import hljs from "highlight.js/lib/core";
 import cpp from "highlight.js/lib/languages/cpp";
 
 hljs.registerLanguage("cpp", cpp);
 
-export default function ProblemView({ problem, revised, onToggleRevised }) {
+function timeAgo(ts) {
+  if (!ts) return null;
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
+export default function ProblemView({
+  problem,
+  revised,
+  revisedAt,
+  onToggleRevised,
+  favorited,
+  onToggleFavorite,
+  note,
+  onUpdateNote,
+}) {
   const codeRef = useRef(null);
+  const [copied, setCopied] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(!!note);
 
   useEffect(() => {
     if (codeRef.current) {
@@ -14,14 +39,39 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
     }
   }, [problem.code]);
 
+  // Reset note visibility when switching problems
+  useEffect(() => {
+    setNoteOpen(!!note);
+  }, [problem.id]);
+
+  const copyCode = useCallback(() => {
+    navigator.clipboard.writeText(problem.code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [problem.code]);
+
+  const isStale = revised && revisedAt && (Date.now() - revisedAt > 7 * 24 * 60 * 60 * 1000);
+
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Header bar */}
-      <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur border-b border-gray-800 px-6 py-4">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-xl font-bold text-white truncate">{problem.title}</h2>
-            <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{problem.title}</h2>
+              <button
+                onClick={onToggleFavorite}
+                className={`text-lg transition-colors shrink-0 ${
+                  favorited ? "text-amber-400" : "text-gray-300 hover:text-amber-400 dark:text-gray-600 dark:hover:text-amber-400"
+                }`}
+                title={favorited ? "Remove from favorites (f)" : "Add to favorites (f)"}
+              >
+                {favorited ? "★" : "☆"}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
               <span>{problem.category}</span>
               {problem.difficulty && (
                 <>
@@ -29,10 +79,10 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
                   <span
                     className={`px-1.5 py-0.5 rounded ${
                       problem.difficulty.toLowerCase() === "easy"
-                        ? "bg-green-900/40 text-green-400"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
                         : problem.difficulty.toLowerCase() === "medium"
-                        ? "bg-yellow-900/40 text-yellow-400"
-                        : "bg-red-900/40 text-red-400"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
                     }`}
                   >
                     {problem.difficulty}
@@ -40,7 +90,15 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
                 </>
               )}
               <span>·</span>
-              <span className="text-gray-500 truncate">{problem.filePath}</span>
+              <span className="text-gray-400 dark:text-gray-500 truncate">{problem.filePath}</span>
+              {revisedAt && (
+                <>
+                  <span>·</span>
+                  <span className={`${isStale ? "text-orange-500" : "text-green-500"}`}>
+                    revised {timeAgo(revisedAt)}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -48,9 +106,10 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
             onClick={onToggleRevised}
             className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               revised
-                ? "bg-green-600/20 text-green-400 border border-green-600/40 hover:bg-green-600/30"
-                : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
+                ? "bg-green-100 text-green-700 border border-green-300 hover:bg-green-200 dark:bg-green-600/20 dark:text-green-400 dark:border-green-600/40 dark:hover:bg-green-600/30"
+                : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             }`}
+            title="Toggle revised (r)"
           >
             {revised ? "✓ Revised" : "Mark as Revised"}
           </button>
@@ -58,13 +117,23 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Spaced repetition nudge */}
+        {isStale && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg text-sm">
+            <span className="text-orange-500 text-lg">⏰</span>
+            <span className="text-orange-700 dark:text-orange-300">
+              You revised this {timeAgo(revisedAt)} — consider going through it again!
+            </span>
+          </div>
+        )}
+
         {/* Description */}
         {problem.description && (
           <section>
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               Problem Description
             </h3>
-            <pre className="whitespace-pre-wrap text-sm text-gray-300 bg-gray-900 rounded-lg p-4 border border-gray-800 font-sans leading-relaxed">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800 font-sans leading-relaxed">
               {problem.description}
             </pre>
           </section>
@@ -74,30 +143,79 @@ export default function ProblemView({ problem, revised, onToggleRevised }) {
         {(problem.complexity.time || problem.complexity.space) && (
           <section className="flex gap-4">
             {problem.complexity.time && (
-              <div className="flex-1 bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                   Time Complexity
                 </div>
-                <div className="text-sm text-blue-400 font-mono">{problem.complexity.time}</div>
+                <div className="text-sm text-blue-600 dark:text-blue-400 font-mono">{problem.complexity.time}</div>
               </div>
             )}
             {problem.complexity.space && (
-              <div className="flex-1 bg-gray-900 rounded-lg p-4 border border-gray-800">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                   Space Complexity
                 </div>
-                <div className="text-sm text-purple-400 font-mono">{problem.complexity.space}</div>
+                <div className="text-sm text-purple-600 dark:text-purple-400 font-mono">{problem.complexity.space}</div>
               </div>
             )}
           </section>
         )}
 
+        {/* Notes */}
+        <section>
+          <button
+            onClick={() => setNoteOpen((v) => !v)}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg className={`w-3 h-3 transition-transform ${noteOpen ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M6 4l8 6-8 6V4z" />
+            </svg>
+            Notes {note && <span className="text-blue-500 text-xs normal-case font-normal">(has notes)</span>}
+          </button>
+          {noteOpen && (
+            <textarea
+              value={note}
+              onChange={(e) => onUpdateNote(e.target.value)}
+              placeholder="Write your observations, tricks, edge cases..."
+              className="w-full h-32 px-4 py-3 text-sm rounded-lg border resize-y
+                         bg-gray-50 border-gray-200 text-gray-700 placeholder-gray-400
+                         dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:placeholder-gray-600
+                         focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          )}
+        </section>
+
         {/* Code */}
         <section>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Source Code
-          </h3>
-          <div className="rounded-lg overflow-hidden border border-gray-800">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Source Code
+            </h3>
+            <button
+              onClick={copyCode}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors
+                         bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200
+                         dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
+              {copied ? (
+                <>
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+          <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
             <pre className="overflow-x-auto p-4 text-sm leading-relaxed">
               <code ref={codeRef} className="language-cpp">
                 {problem.code}
