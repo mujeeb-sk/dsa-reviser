@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* highlight.js github-dark theme */
+.hljs {
+  background: #0d1117 !important;
+  color: #c9d1d9;
+}
+.hljs-keyword,
+.hljs-built_in { color: #ff7b72; }
+.hljs-type,
+.hljs-class { color: #ffa657; }
+.hljs-string { color: #a5d6ff; }
+.hljs-number { color: #79c0ff; }
+.hljs-comment { color: #8b949e; font-style: italic; }
+.hljs-function,
+.hljs-title { color: #d2a8ff; }
+.hljs-params { color: #c9d1d9; }
+.hljs-literal { color: #79c0ff; }
+.hljs-meta { color: #ffa657; }
+.hljs-preprocessor { color: #ff7b72; }
+
+/* Scrollbar */
+pre::-webkit-scrollbar { height: 8px; width: 8px; }
+pre::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+pre::-webkit-scrollbar-track { background: transparent; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
