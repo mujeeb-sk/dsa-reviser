@@ -56,11 +56,11 @@ export default function ProblemView({
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Header bar */}
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 pl-8 md:pl-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{problem.title}</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{problem.title}</h2>
               <button
                 onClick={onToggleFavorite}
                 className={`text-lg transition-colors shrink-0 ${
@@ -71,8 +71,8 @@ export default function ProblemView({
                 {favorited ? "★" : "☆"}
               </button>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-              <span>{problem.category}</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <span className="truncate max-w-[150px] sm:max-w-none">{problem.category}</span>
               {problem.difficulty && (
                 <>
                   <span>·</span>
@@ -90,7 +90,7 @@ export default function ProblemView({
                 </>
               )}
               <span>·</span>
-              <span className="text-gray-400 dark:text-gray-500 truncate">{problem.filePath}</span>
+              <span className="text-gray-400 dark:text-gray-500 truncate hidden sm:inline">{problem.filePath}</span>
               {revisedAt && (
                 <>
                   <span>·</span>
@@ -116,7 +116,7 @@ export default function ProblemView({
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Spaced repetition nudge */}
         {isStale && (
           <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg text-sm">
@@ -141,7 +141,7 @@ export default function ProblemView({
 
         {/* Complexity */}
         {(problem.complexity.time || problem.complexity.space) && (
-          <section className="flex gap-4">
+          <section className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {problem.complexity.time && (
               <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">

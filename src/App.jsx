@@ -245,13 +245,25 @@ export default function App() {
       {/* Mobile toggle */}
       <button
         onClick={() => setSidebarOpen((v) => !v)}
-        className="fixed top-3 left-3 z-50 md:hidden bg-white dark:bg-gray-800 p-2 rounded-lg shadow"
+        className="fixed top-3 left-3 z-50 md:hidden bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
         aria-label="Toggle sidebar"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          {sidebarOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
         </svg>
       </button>
+
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Sidebar */}
       <Sidebar
@@ -293,9 +305,9 @@ export default function App() {
             onUpdateNote={(text) => updateNote(selected.id, text)}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 px-4">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-2 text-gray-700 dark:text-gray-300">DSA Reviser</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-2 text-gray-700 dark:text-gray-300">DSA Reviser</h2>
               <p>Select a problem from the sidebar to start revising</p>
               <p className="text-sm mt-4 text-gray-400 dark:text-gray-600">
                 {problems.length} problems · {Object.keys(revised).length} revised
