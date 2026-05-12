@@ -44,7 +44,7 @@ function slugToTitle(slug) {
     .replace(/\bLlist\b/g, "Linked List");
 }
 
-/** Derive category + difficulty from the relative path */
+/** Derive topic, subcategory and difficulty from the relative path */
 function categorizePath(relPath) {
   // relPath examples:
   //   src/coding_exercises/arrays/easy/find_missing_number.cpp
@@ -55,33 +55,46 @@ function categorizePath(relPath) {
   // Remove "src" prefix
   const rest = parts.slice(1); // e.g. ["coding_exercises","arrays","easy","file.cpp"]
 
-  let category = "";
+  let topic = "";
+  let subcategory = "";
   let difficulty = "";
 
   if (rest[0] === "coding_exercises") {
-    const topic = slugToTitle(rest[1]); // "Arrays", "Linked Lists", "Trees", "Misc"
-    if (rest.length === 3) {
-      // e.g. trees/file.cpp or linked_lists/file.cpp
-      category = topic;
+    if (rest.length === 2) {
+      // e.g. coding_exercises/helloWorld.cpp — file directly in coding_exercises
+      topic = "Misc";
+      subcategory = "";
       difficulty = "";
-    } else if (rest.length === 4) {
-      // e.g. arrays/easy/file.cpp
-      category = topic;
-      difficulty = slugToTitle(rest[2]);
-    } else if (rest.length === 5) {
-      // e.g. linked_lists/FAQs/medium/file.cpp
-      category = `${topic} — ${slugToTitle(rest[2])}`;
-      difficulty = slugToTitle(rest[3]);
+    } else {
+      topic = slugToTitle(rest[1]); // "Arrays", "Linked Lists", "Trees", "Misc"
+
+      if (rest.length === 3) {
+        // e.g. trees/file.cpp — no subfolder
+        subcategory = "";
+        difficulty = "";
+      } else if (rest.length === 4) {
+        // e.g. arrays/easy/file.cpp
+        subcategory = slugToTitle(rest[2]); // "Easy", "Medium", "Hard"
+        difficulty = subcategory;
+      } else if (rest.length === 5) {
+        // e.g. linked_lists/FAQs/medium/file.cpp
+        subcategory = `${slugToTitle(rest[2])} — ${slugToTitle(rest[3])}`;
+        difficulty = slugToTitle(rest[3]);
+      }
     }
   } else if (rest[0] === "algorithms") {
-    const topic = slugToTitle(rest[1]); // "Sorting", "Searching"
-    category = `Algorithms — ${topic}`;
+    topic = "Algorithms";
+    subcategory = slugToTitle(rest[1]); // "Sorting", "Searching"
     difficulty = "";
   } else {
-    category = "Other";
+    topic = "Other";
+    subcategory = "";
   }
 
-  return { category, difficulty };
+  // Keep a combined category for backward compat
+  const category = subcategory ? `${topic} — ${subcategory}` : topic;
+
+  return { topic, subcategory, difficulty, category };
 }
 
 /** Extract the first block-comment as the problem description */
@@ -117,13 +130,15 @@ const problems = files.map((filePath) => {
   const code = readFileSync(filePath, "utf-8");
   const relPath = relative(DSA_ROOT, filePath);
   const slug = basename(filePath, ".cpp");
-  const { category, difficulty } = categorizePath(relPath);
+  const { topic, subcategory, difficulty, category } = categorizePath(relPath);
   const description = extractDescription(code);
   const complexity = extractComplexity(code);
 
   return {
     id: slug,
     title: slugToTitle(slug),
+    topic,
+    subcategory,
     category,
     difficulty,
     description,

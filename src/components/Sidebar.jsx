@@ -21,15 +21,18 @@ export default function Sidebar({
 }) {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  const categories = useMemo(() => {
-    if (!showFavoritesOnly) return [...grouped.entries()];
-    // Filter to favorites only
-    const map = new Map();
-    for (const [cat, items] of grouped) {
-      const favs = items.filter((p) => favorites.has(p.id));
-      if (favs.length) map.set(cat, favs);
+  // Build filtered view: topic → subcategory → [problems], respecting favorites filter
+  const topics = useMemo(() => {
+    const result = [];
+    for (const [topic, subMap] of grouped) {
+      const subs = [];
+      for (const [sub, items] of subMap) {
+        const filtered = showFavoritesOnly ? items.filter((p) => favorites.has(p.id)) : items;
+        if (filtered.length > 0) subs.push({ name: sub, items: filtered });
+      }
+      if (subs.length > 0) result.push({ topic, subs });
     }
-    return [...map.entries()];
+    return result;
   }, [grouped, showFavoritesOnly, favorites]);
 
   return (
@@ -100,23 +103,22 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Problem list */}
+      {/* Problem list — nested topic → subcategory → problems */}
       <nav className="flex-1 overflow-y-auto">
-        {categories.length === 0 && (
+        {topics.length === 0 && (
           <p className="p-4 text-sm text-gray-400 dark:text-gray-500">
             {showFavoritesOnly ? "No favorites yet." : "No problems match your search."}
           </p>
         )}
-        {categories.map(([category, items]) => (
-          <CategoryGroup
-            key={category}
-            category={category}
-            items={items}
+        {topics.map(({ topic, subs }) => (
+          <TopicGroup
+            key={topic}
+            topic={topic}
+            subs={subs}
             selectedId={selectedId}
             onSelect={onSelect}
             revised={revised}
             favorites={favorites}
-            onToggleFavorite={onToggleFavorite}
           />
         ))}
       </nav>
@@ -124,85 +126,169 @@ export default function Sidebar({
   );
 }
 
-function CategoryGroup({ category, items, selectedId, onSelect, revised, favorites, onToggleFavorite }) {
-  const revisedCount = items.filter((p) => !!revised[p.id]).length;
+/** Top-level collapsible group (e.g. Arrays, Linked Lists, Algorithms) */
+function TopicGroup({ topic, subs, selectedId, onSelect, revised, favorites }) {
+  const totalItems = subs.reduce((acc, s) => acc + s.items.length, 0);
+  const revisedCount = subs.reduce(
+    (acc, s) => acc + s.items.filter((p) => !!revised[p.id]).length,
+    0
+  );
+  const hasSubs = !(subs.length === 1 && subs[0].name === "");
 
   return (
-    <details className="group" open>
-      <summary className="flex items-center justify-between px-4 py-2.5 cursor-pointer
-                          hover:bg-gray-100 border-b border-gray-200 bg-gray-50
-                          dark:hover:bg-gray-800 dark:border-gray-800 dark:bg-gray-900
-                          text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400
-                          select-none sticky top-0 z-10">
+    <details className="group/topic" open>
+      <summary
+        className="flex items-center justify-between px-4 py-2.5 cursor-pointer
+                   hover:bg-gray-100 border-b border-gray-200 bg-gray-50
+                   dark:hover:bg-gray-800 dark:border-gray-800 dark:bg-gray-900
+                   text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300
+                   select-none sticky top-0 z-20"
+      >
         <span className="flex items-center gap-2">
-          <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-3 h-3 transition-transform group-open/topic:rotate-90" fill="currentColor" viewBox="0 0 20 20">
             <path d="M6 4l8 6-8 6V4z" />
           </svg>
-          {category}
+          {topic}
+        </span>
+        <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">
+          {revisedCount}/{totalItems}
+        </span>
+      </summary>
+
+      {hasSubs ? (
+        /* Render subcategory tabs as nested collapsible groups */
+        subs.map((sub) => (
+          <SubcategoryGroup
+            key={sub.name}
+            name={sub.name}
+            items={sub.items}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            revised={revised}
+            favorites={favorites}
+          />
+        ))
+      ) : (
+        /* No subcategories — render problems directly */
+        <ProblemList
+          items={subs[0].items}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          revised={revised}
+          favorites={favorites}
+          indent={false}
+        />
+      )}
+    </details>
+  );
+}
+
+/** Nested subcategory group (e.g. Easy, Medium, Hard, FAQs — Medium) */
+function SubcategoryGroup({ name, items, selectedId, onSelect, revised, favorites }) {
+  const revisedCount = items.filter((p) => !!revised[p.id]).length;
+
+  // Color the subcategory label based on difficulty keywords
+  const lowerName = name.toLowerCase();
+  const colorClass = lowerName.includes("easy")
+    ? "text-green-600 dark:text-green-400"
+    : lowerName.includes("medium")
+    ? "text-yellow-600 dark:text-yellow-400"
+    : lowerName.includes("hard")
+    ? "text-red-600 dark:text-red-400"
+    : "text-gray-500 dark:text-gray-400";
+
+  return (
+    <details className="group/sub" open>
+      <summary
+        className="flex items-center justify-between pl-8 pr-4 py-2 cursor-pointer
+                   hover:bg-gray-50 border-b border-gray-100
+                   dark:hover:bg-gray-800/50 dark:border-gray-800/50
+                   text-xs font-semibold tracking-wide
+                   select-none sticky top-[37px] z-10 bg-white dark:bg-gray-900"
+      >
+        <span className={`flex items-center gap-1.5 ${colorClass}`}>
+          <svg className="w-2.5 h-2.5 transition-transform group-open/sub:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6 4l8 6-8 6V4z" />
+          </svg>
+          {name}
         </span>
         <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">
           {revisedCount}/{items.length}
         </span>
       </summary>
 
-      <ul>
-        {items.map((p) => {
-          const isRevised = !!revised[p.id];
-          const revisedAt = revised[p.id] || null;
-          const isStale = isRevised && revisedAt && (Date.now() - revisedAt > SEVEN_DAYS);
-
-          return (
-            <li key={p.id} className="group/item relative">
-              <button
-                onClick={() => onSelect(p.id)}
-                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2
-                           transition-colors border-b border-gray-100 dark:border-gray-800/50
-                  ${
-                    selectedId === p.id
-                      ? "bg-blue-50 text-blue-600 border-l-2 border-l-blue-500 dark:bg-blue-600/15 dark:text-blue-400"
-                      : "hover:bg-gray-50 text-gray-700 dark:hover:bg-gray-800/60 dark:text-gray-300"
-                  }`}
-              >
-                {/* Revised indicator — dot with stale highlighting */}
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${
-                    isStale
-                      ? "bg-orange-400 ring-2 ring-orange-200 dark:ring-orange-800"
-                      : isRevised
-                      ? "bg-green-500"
-                      : "bg-gray-300 dark:bg-gray-600"
-                  }`}
-                  title={
-                    isStale
-                      ? "Revised 7+ days ago — consider re-revising"
-                      : isRevised
-                      ? "Revised"
-                      : "Not revised"
-                  }
-                />
-                {/* Favorite star */}
-                {favorites.has(p.id) && (
-                  <span className="text-amber-400 text-xs shrink-0">★</span>
-                )}
-                <span className="truncate">{p.title}</span>
-                {p.difficulty && (
-                  <span
-                    className={`ml-auto text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
-                      p.difficulty.toLowerCase() === "easy"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                        : p.difficulty.toLowerCase() === "medium"
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                    }`}
-                  >
-                    {p.difficulty}
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <ProblemList
+        items={items}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        revised={revised}
+        favorites={favorites}
+        indent={true}
+      />
     </details>
+  );
+}
+
+/** Renders a flat list of problem items */
+function ProblemList({ items, selectedId, onSelect, revised, favorites, indent }) {
+  return (
+    <ul>
+      {items.map((p) => {
+        const isRevised = !!revised[p.id];
+        const revisedAt = revised[p.id] || null;
+        const isStale = isRevised && revisedAt && (Date.now() - revisedAt > SEVEN_DAYS);
+
+        return (
+          <li key={p.id}>
+            <button
+              onClick={() => onSelect(p.id)}
+              className={`w-full text-left ${indent ? "pl-10" : "pl-4"} pr-4 py-2 text-sm flex items-center gap-2
+                         transition-colors border-b border-gray-100 dark:border-gray-800/50
+                ${
+                  selectedId === p.id
+                    ? "bg-blue-50 text-blue-600 border-l-2 border-l-blue-500 dark:bg-blue-600/15 dark:text-blue-400"
+                    : "hover:bg-gray-50 text-gray-700 dark:hover:bg-gray-800/60 dark:text-gray-300"
+                }`}
+            >
+              {/* Revised indicator */}
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  isStale
+                    ? "bg-orange-400 ring-2 ring-orange-200 dark:ring-orange-800"
+                    : isRevised
+                    ? "bg-green-500"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+                title={
+                  isStale
+                    ? "Revised 7+ days ago — consider re-revising"
+                    : isRevised
+                    ? "Revised"
+                    : "Not revised"
+                }
+              />
+              {/* Favorite star */}
+              {favorites.has(p.id) && (
+                <span className="text-amber-400 text-xs shrink-0">★</span>
+              )}
+              <span className="truncate">{p.title}</span>
+              {p.difficulty && (
+                <span
+                  className={`ml-auto text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                    p.difficulty.toLowerCase() === "easy"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                      : p.difficulty.toLowerCase() === "medium"
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
+                      : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                  }`}
+                >
+                  {p.difficulty}
+                </span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

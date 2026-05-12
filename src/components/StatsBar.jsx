@@ -6,9 +6,14 @@ export default function StatsBar({ total, revised, grouped, onPickRandom, onExpo
 
   const stats = useMemo(() => {
     const cats = [];
-    for (const [category, items] of grouped) {
-      const done = items.filter((p) => !!revised[p.id]).length;
-      cats.push({ category, total: items.length, done });
+    for (const [topic, subMap] of grouped) {
+      let topicTotal = 0;
+      let topicDone = 0;
+      for (const items of subMap.values()) {
+        topicTotal += items.length;
+        topicDone += items.filter((p) => !!revised[p.id]).length;
+      }
+      cats.push({ category: topic, total: topicTotal, done: topicDone });
     }
     return cats;
   }, [grouped, revised]);
@@ -97,7 +102,7 @@ export default function StatsBar({ total, revised, grouped, onPickRandom, onExpo
                 : "border-gray-300 bg-gray-100 text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
             }`}
           >
-            {s.category.replace("Algorithms — ", "").replace("Coding Exercises — ", "")}: {s.done}/{s.total}
+            {s.category}: {s.done}/{s.total}
           </span>
         ))}
       </div>

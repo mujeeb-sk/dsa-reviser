@@ -133,11 +133,15 @@ export default function App() {
   }, []);
 
   // ── Grouping & filtering ──
+  // Build a nested structure: topic → subcategory → [problems]
   const grouped = useMemo(() => {
     const map = new Map();
     for (const p of problems) {
-      if (!map.has(p.category)) map.set(p.category, []);
-      map.get(p.category).push(p);
+      if (!map.has(p.topic)) map.set(p.topic, new Map());
+      const subMap = map.get(p.topic);
+      const subKey = p.subcategory || "";
+      if (!subMap.has(subKey)) subMap.set(subKey, []);
+      subMap.get(subKey).push(p);
     }
     return map;
   }, []);
@@ -145,24 +149,27 @@ export default function App() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     const map = new Map();
-    for (const [cat, items] of grouped) {
-      const hits = items.filter((p) => {
-        // difficulty filter
-        if (difficultyFilter !== "all") {
-          const d = (p.difficulty || "").toLowerCase();
-          if (d !== difficultyFilter) return false;
-        }
-        // text search
-        if (q) {
-          return (
-            p.title.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q)
-          );
-        }
-        return true;
-      });
-      if (hits.length) map.set(cat, hits);
+    for (const [topic, subMap] of grouped) {
+      const filteredSubs = new Map();
+      for (const [sub, items] of subMap) {
+        const hits = items.filter((p) => {
+          if (difficultyFilter !== "all") {
+            const d = (p.difficulty || "").toLowerCase();
+            if (d !== difficultyFilter) return false;
+          }
+          if (q) {
+            return (
+              p.title.toLowerCase().includes(q) ||
+              p.category.toLowerCase().includes(q) ||
+              p.topic.toLowerCase().includes(q) ||
+              p.description.toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+        if (hits.length) filteredSubs.set(sub, hits);
+      }
+      if (filteredSubs.size > 0) map.set(topic, filteredSubs);
     }
     return map;
   }, [grouped, search, difficultyFilter]);
@@ -170,8 +177,10 @@ export default function App() {
   /** Flat list of currently visible problem ids (for keyboard nav) */
   const flatIds = useMemo(() => {
     const ids = [];
-    for (const items of filtered.values()) {
-      for (const p of items) ids.push(p.id);
+    for (const subMap of filtered.values()) {
+      for (const items of subMap.values()) {
+        for (const p of items) ids.push(p.id);
+      }
     }
     return ids;
   }, [filtered]);
