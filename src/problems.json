@@ -821,13 +821,19 @@
     "subcategory": "",
     "category": "Linked Lists",
     "difficulty": "",
-    "description": "",
-    "approaches": [],
+    "description": "Insert Node at Tail of a Singly Linked List\n\nGiven a singly linked list and a value X, insert a new node with value X\nat the end (tail) of the list. Return the head of the modified list.\n\n📌 Example 1\nInput:  [1, 2, 3, 4], X = 5\nOutput: [1, 2, 3, 4, 5]\nExplanation: Node with value 5 is appended at the tail.\n\n📌 Example 2\nInput:  [], X = 10\nOutput: [10]\nExplanation: List is empty; new node becomes the head.",
+    "approaches": [
+      {
+        "name": "Solution",
+        "time": "O(N) -- traverse the entire list to reach the tail.",
+        "space": "O(1) -- no extra space beyond the new node."
+      }
+    ],
     "complexity": {
-      "time": "",
-      "space": ""
+      "time": "O(N) -- traverse the entire list to reach the tail.",
+      "space": "O(1) -- no extra space beyond the new node."
     },
-    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode() : data(0), next(nullptr) {}\n\n    ListNode(int x) : data(x), next(nullptr) {}\n\n    ListNode(int x, ListNode *next) : data(x), next(next) {}\n};\n\nclass Solution {\n  public:\n    ListNode *insertAtTail(ListNode *&head, int X) {\n        if (head == nullptr) {\n            return new ListNode(X);\n        }\n\n        ListNode *current = head;\n\n        while (current->next != nullptr) {\n            current = current->next;\n        }\n\n        current->next = new ListNode(X);\n\n        return head;\n    }\n};\n\nvoid printList(ListNode *head) {\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr)\n            cout << \" -> \";\n        current = current->next;\n    }\n    cout << endl;\n}\n\nint main() {\n    // Create linked list: 1 -> 2 -> 3 -> 4\n    ListNode *head = new ListNode(1);\n    head->next = new ListNode(2);\n    head->next->next = new ListNode(3);\n    head->next->next->next = new ListNode(4);\n\n    cout << \"Original List: \";\n    printList(head);\n\n    Solution sol;\n    head = sol.insertAtTail(head, 5);\n\n    cout << \"After inserting 5 at tail: \";\n    printList(head);\n\n    // Cleanup\n    ListNode *current = head;\n    while (current != nullptr) {\n        ListNode *temp = current;\n        current = current->next;\n        delete temp;\n    }\n\n    return 0;\n}",
+    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode(int x) : data(x), next(nullptr) {}\n};\n\nListNode *buildList(const vector<int> &values) {\n    if (values.empty()) {\n        return nullptr;\n    }\n    ListNode *head = new ListNode(values[0]);\n    ListNode *current = head;\n    for (int i = 1; i < (int)values.size(); i++) {\n        current->next = new ListNode(values[i]);\n        current = current->next;\n    }\n    return head;\n}\n\nvoid printList(ListNode *head) {\n    cout << \"[\";\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr) {\n            cout << \", \";\n        }\n        current = current->next;\n    }\n    cout << \"]\";\n}\n\nvoid deleteList(ListNode *head) {\n    while (head != nullptr) {\n        ListNode *temp = head;\n        head = head->next;\n        delete temp;\n    }\n}\n\nclass Solution {\n  public:\n    /* Traverse to the last node and append a new node.\n       If the list is empty, return the new node as head. */\n    ListNode *insertAtTail(ListNode *head, int X) {\n        ListNode *newNode = new ListNode(X);\n\n        if (head == nullptr) {\n            return newNode;\n        }\n\n        ListNode *current = head;\n        while (current->next != nullptr) {\n            current = current->next;\n        }\n        current->next = newNode;\n\n        return head;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- traverse the entire list to reach the tail.\n    Space Complexity: O(1) -- no extra space beyond the new node.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    ListNode *head1 = buildList({1, 2, 3, 4});\n    cout << \"Input: \";\n    printList(head1);\n    head1 = solution.insertAtTail(head1, 5);\n    cout << \" -> After inserting 5 at tail: \";\n    printList(head1);\n    cout << endl;\n    deleteList(head1);\n\n    /* Example 2 */\n    ListNode *head2 = nullptr;\n    cout << \"Input: \";\n    printList(head2);\n    head2 = solution.insertAtTail(head2, 10);\n    cout << \" -> After inserting 10 at tail: \";\n    printList(head2);\n    cout << endl;\n    deleteList(head2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/linked_lists/insert_node_at_tail_sll.cpp"
   },
   {
