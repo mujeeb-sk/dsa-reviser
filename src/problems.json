@@ -620,13 +620,19 @@
     "subcategory": "",
     "category": "Linked Lists",
     "difficulty": "",
-    "description": "",
-    "approaches": [],
+    "description": "Delete Head of a Singly Linked List\n\nGiven a singly linked list, delete the head node and return the new head.\n\n📌 Example 1\nInput:  [1, 2, 3, 4, 5]\nOutput: [2, 3, 4, 5]\nExplanation: Head node (1) is removed; new head is 2.\n\n📌 Example 2\nInput:  [10]\nOutput: []\nExplanation: Only node is removed; list becomes empty.",
+    "approaches": [
+      {
+        "name": "Solution",
+        "time": "O(1) -- constant-time pointer update.",
+        "space": "O(1) -- no extra space."
+      }
+    ],
     "complexity": {
-      "time": "",
-      "space": ""
+      "time": "O(1) -- constant-time pointer update.",
+      "space": "O(1) -- no extra space."
     },
-    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode() : data(0), next(nullptr) {}\n\n    ListNode(int x) : data(x), next(nullptr) {}\n\n    ListNode(int x, ListNode *next) : data(x), next(next) {}\n};\n\nclass Solution {\n  public:\n    ListNode *deleteHead(ListNode *&head) { return (head->next != nullptr) ? head->next : nullptr; }\n};\n\nvoid printList(ListNode *head) {\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr)\n            cout << \" -> \";\n        current = current->next;\n    }\n    cout << endl;\n}\n\nint main() {\n    // Create linked list: 1 -> 2 -> 3 -> 4 -> 5\n    ListNode *head = new ListNode(1);\n    head->next = new ListNode(2);\n    head->next->next = new ListNode(3);\n    head->next->next->next = new ListNode(4);\n    head->next->next->next->next = new ListNode(5);\n\n    cout << \"Original List: \";\n    printList(head);\n\n    Solution sol;\n    ListNode *oldHead = head;\n    head = sol.deleteHead(head);\n    delete oldHead;\n\n    cout << \"After deleting head: \";\n    printList(head);\n\n    // Cleanup\n    ListNode *current = head;\n    while (current != nullptr) {\n        ListNode *temp = current;\n        current = current->next;\n        delete temp;\n    }\n\n    return 0;\n}",
+    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode(int x) : data(x), next(nullptr) {}\n};\n\nListNode *buildList(const vector<int> &values) {\n    if (values.empty()) {\n        return nullptr;\n    }\n    ListNode *head = new ListNode(values[0]);\n    ListNode *current = head;\n    for (int i = 1; i < (int)values.size(); i++) {\n        current->next = new ListNode(values[i]);\n        current = current->next;\n    }\n    return head;\n}\n\nvoid printList(ListNode *head) {\n    cout << \"[\";\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr) {\n            cout << \", \";\n        }\n        current = current->next;\n    }\n    cout << \"]\";\n}\n\nvoid deleteList(ListNode *head) {\n    while (head != nullptr) {\n        ListNode *temp = head;\n        head = head->next;\n        delete temp;\n    }\n}\n\nclass Solution {\n  public:\n    /* Delete the head node and return the new head.\n       Frees the old head's memory. */\n    ListNode *deleteHead(ListNode *head) {\n        if (head == nullptr) {\n            return nullptr;\n        }\n\n        ListNode *newHead = head->next;\n        delete head;\n        return newHead;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(1) -- constant-time pointer update.\n    Space Complexity: O(1) -- no extra space.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    ListNode *head1 = buildList({1, 2, 3, 4, 5});\n    cout << \"Input: \";\n    printList(head1);\n    head1 = solution.deleteHead(head1);\n    cout << \" -> After deleting head: \";\n    printList(head1);\n    cout << endl;\n    deleteList(head1);\n\n    /* Example 2 */\n    ListNode *head2 = buildList({10});\n    cout << \"Input: \";\n    printList(head2);\n    head2 = solution.deleteHead(head2);\n    cout << \" -> After deleting head: \";\n    printList(head2);\n    cout << endl;\n    deleteList(head2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/linked_lists/delete_head_sll.cpp"
   },
   {
