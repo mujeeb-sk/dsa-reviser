@@ -139,8 +139,66 @@ export default function ProblemView({
           </section>
         )}
 
-        {/* Complexity */}
-        {(problem.complexity.time || problem.complexity.space) && (
+        {/* Approaches & Complexity */}
+        {problem.approaches && problem.approaches.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              {problem.approaches.length > 1 ? "Approaches & Complexity" : "Complexity Analysis"}
+            </h3>
+            <div className="space-y-3">
+              {problem.approaches.map((approach, idx) => {
+                const nameL = approach.name.toLowerCase();
+                const isBrute = nameL.includes("brute");
+                const isOptimal = nameL.includes("optimal") || nameL.includes("optimised") || nameL.includes("optimized");
+                const accentColor = isBrute
+                  ? "border-l-orange-400"
+                  : isOptimal
+                  ? "border-l-green-500"
+                  : "border-l-blue-400";
+                const labelBg = isBrute
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400"
+                  : isOptimal
+                  ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  : "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
+
+                return (
+                  <div
+                    key={idx}
+                    className={`border-l-4 ${accentColor} bg-gray-50 dark:bg-gray-900 rounded-r-lg p-4 border border-gray-200 dark:border-gray-800`}
+                  >
+                    {problem.approaches.length > 1 && (
+                      <div className={`inline-block text-xs font-semibold px-2 py-0.5 rounded mb-2 ${labelBg}`}>
+                        {approach.name}
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      {approach.time && (
+                        <div className="flex-1">
+                          <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                            Time
+                          </div>
+                          <div className="text-sm text-blue-600 dark:text-blue-400">{approach.time}</div>
+                        </div>
+                      )}
+                      {approach.space && (
+                        <div className="flex-1">
+                          <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                            Space
+                          </div>
+                          <div className="text-sm text-purple-600 dark:text-purple-400">{approach.space}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Fallback: legacy single complexity (if no approaches extracted) */}
+        {(!problem.approaches || problem.approaches.length === 0) &&
+          (problem.complexity.time || problem.complexity.space) && (
           <section className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {problem.complexity.time && (
               <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">

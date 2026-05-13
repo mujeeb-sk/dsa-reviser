@@ -43,6 +43,7 @@ export default function App() {
   const [notes, setNotes] = useState(() => loadJSON("dsa-notes", {}));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streak, setStreak] = useState(getStreak);
+  const [randomPreview, setRandomPreview] = useState(null); // problem object for random preview modal
 
   const searchRef = useRef(null);
 
@@ -187,14 +188,21 @@ export default function App() {
 
   const selected = problems.find((p) => p.id === selectedId) || null;
 
-  // ── Random problem picker ──
+  // ── Random problem picker (shows preview first) ──
   const pickRandom = useCallback(() => {
     const unrevised = problems.filter((p) => !revised[p.id]);
     const pool = unrevised.length > 0 ? unrevised : problems;
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    setSelectedId(pick.id);
-    setSidebarOpen(false);
+    setRandomPreview(pick);
   }, [revised]);
+
+  const openRandomProblem = useCallback(() => {
+    if (randomPreview) {
+      setSelectedId(randomPreview.id);
+      setSidebarOpen(false);
+      setRandomPreview(null);
+    }
+  }, [randomPreview]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -336,6 +344,79 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Random problem preview modal */}
+      {randomPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setRandomPreview(null)}>
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="p-5 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  🎲 Random Problem
+                </span>
+                <button
+                  onClick={() => setRandomPreview(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                {randomPreview.title}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <span>{randomPreview.category}</span>
+                {randomPreview.difficulty && (
+                  <>
+                    <span>·</span>
+                    <span className={`px-1.5 py-0.5 rounded ${
+                      randomPreview.difficulty.toLowerCase() === "easy"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                        : randomPreview.difficulty.toLowerCase() === "medium"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                    }`}>
+                      {randomPreview.difficulty}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            {randomPreview.description && (
+              <div className="p-5 border-b border-gray-200 dark:border-gray-800">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
+                  {randomPreview.description}
+                </pre>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="p-5 flex items-center gap-3">
+              <button
+                onClick={openRandomProblem}
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                View Solution →
+              </button>
+              <button
+                onClick={() => {
+                  setRandomPreview(null);
+                  pickRandom();
+                }}
+                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-700"
+              >
+                🎲 Another
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

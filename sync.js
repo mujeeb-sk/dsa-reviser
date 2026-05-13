@@ -108,18 +108,97 @@ function extractDescription(code) {
     .trim();
 }
 
-/** Extract complexity info from inline comments */
-function extractComplexity(code) {
-  const timeMatch = code.match(
-    /Time\s+Complexity\s*[:=\-—>]*\s*(.+)/i
-  );
-  const spaceMatch = code.match(
-    /Space\s+Complexity\s*[:=\-—>]*\s*(.+)/i
-  );
-  return {
-    time: timeMatch ? timeMatch[1].trim().replace(/\*\/\s*$/, "").trim() : "",
-    space: spaceMatch ? spaceMatch[1].trim().replace(/\*\/\s*$/, "").trim() : "",
-  };
+/** Remove the first block comment (description) from the displayed code */
+function stripDescription(code) {
+  // Remove the leading block comment and any blank lines right after it
+  return code.replace(/^\/\*[\s\S]*?\*\/\s*\n?/, "").trimStart();
+}
+
+/**
+ * Extract all approaches with their names and complexity analysis.
+ *
+ * Pattern: Each Solution/Solution2/... class has:
+ *   - A comment like "Brute Force Approach:" or "Optimal Approach (name):"
+ *   - A "Complexity Analysis" block with Time/Space lines (with reasoning)
+ *
+ * Returns an array of { name, time, timeReason, space, spaceReason }
+ */
+function extractApproaches(code) {
+  const approaches = [];
+
+  // Match all "Complexity Analysis" blocks — each belongs to a Solution class
+  // We need to find each approach comment + its complexity block
+  // Strategy: split by Solution class boundaries
+
+  // Find all approach names: /* Brute Force Approach: ... */  or  /* Optimal Approach (...): ... */
+  const approachRegex = /\/\*\s*((?:Brute\s+Force|Better|Optimal|Optimised|Optimized|Naive|Greedy|Recursive|Iterative|Alternative)[\s\S]*?Approach(?:\s*\([^)]*\))?)\s*[:—\-]\s*([\s\S]*?)\*\//gi;
+  const complexityRegex = /\/\*\s*Complexity\s+Analysis\s*([\s\S]*?)\*\//gi;
+
+  // Collect approach names with their positions
+  const approachNames = [];
+  let m;
+  while ((m = approachRegex.exec(code)) !== null) {
+    approachNames.push({ name: m[1].trim(), pos: m.index });
+  }
+
+  // Collect all complexity blocks with positions
+  const complexityBlocks = [];
+  while ((m = complexityRegex.exec(code)) !== null) {
+    complexityBlocks.push({ text: m[1], pos: m.index });
+  }
+
+  // Match each approach to the next complexity block after it
+  for (let i = 0; i < approachNames.length; i++) {
+    const approach = approachNames[i];
+    // Find the complexity block that comes after this approach
+    const compBlock = complexityBlocks.find((c) => c.pos > approach.pos &&
+      (i + 1 >= approachNames.length || c.pos < approachNames[i + 1].pos));
+
+    let time = "";
+    let space = "";
+
+    if (compBlock) {
+      const timeMatch = compBlock.text.match(
+        /Time\s+Complexity\s*[:=\-—>]*\s*([\s\S]*?)(?=Space\s+Complexity|$)/i
+      );
+      const spaceMatch = compBlock.text.match(
+        /Space\s+Complexity\s*[:=\-—>]*\s*([\s\S]*?)$/i
+      );
+
+      if (timeMatch) {
+        time = timeMatch[1].trim().replace(/\*\/\s*$/, "").replace(/\n\s*/g, " ").trim();
+      }
+      if (spaceMatch) {
+        space = spaceMatch[1].trim().replace(/\*\/\s*$/, "").replace(/\n\s*/g, " ").trim();
+      }
+    }
+
+    approaches.push({
+      name: approach.name,
+      time,
+      space,
+    });
+  }
+
+  // If no named approaches found, fall back to extracting all complexity blocks
+  if (approaches.length === 0 && complexityBlocks.length > 0) {
+    for (const block of complexityBlocks) {
+      const timeMatch = block.text.match(
+        /Time\s+Complexity\s*[:=\-—>]*\s*([\s\S]*?)(?=Space\s+Complexity|$)/i
+      );
+      const spaceMatch = block.text.match(
+        /Space\s+Complexity\s*[:=\-—>]*\s*([\s\S]*?)$/i
+      );
+
+      approaches.push({
+        name: approaches.length === 0 ? "Solution" : `Solution ${approaches.length + 1}`,
+        time: timeMatch ? timeMatch[1].trim().replace(/\*\/\s*$/, "").replace(/\n\s*/g, " ").trim() : "",
+        space: spaceMatch ? spaceMatch[1].trim().replace(/\*\/\s*$/, "").replace(/\n\s*/g, " ").trim() : "",
+      });
+    }
+  }
+
+  return approaches;
 }
 
 // ─── Main ─────────────────────────────────────────────
@@ -127,12 +206,19 @@ const srcDir = join(DSA_ROOT, "src");
 const files = collectFiles(srcDir);
 
 const problems = files.map((filePath) => {
-  const code = readFileSync(filePath, "utf-8");
+  const rawCode = readFileSync(filePath, "utf-8");
   const relPath = relative(DSA_ROOT, filePath);
   const slug = basename(filePath, ".cpp");
   const { topic, subcategory, difficulty, category } = categorizePath(relPath);
-  const description = extractDescription(code);
-  const complexity = extractComplexity(code);
+  const description = extractDescription(rawCode);
+  const approaches = extractApproaches(rawCode);
+  const code = stripDescription(rawCode);
+
+  // Legacy single complexity (last/best approach) for backward compat
+  const lastApproach = approaches[approaches.length - 1];
+  const complexity = lastApproach
+    ? { time: lastApproach.time, space: lastApproach.space }
+    : { time: "", space: "" };
 
   return {
     id: slug,
@@ -142,6 +228,7 @@ const problems = files.map((filePath) => {
     category,
     difficulty,
     description,
+    approaches,
     complexity,
     code,
     filePath: relPath,
