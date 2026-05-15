@@ -795,13 +795,19 @@
     "subcategory": "",
     "category": "Linked Lists",
     "difficulty": "",
-    "description": "",
-    "approaches": [],
+    "description": "Insert Node at Head of a Singly Linked List\n\nGiven a singly linked list and a value X, insert a new node with value X\nat the beginning (head) of the list. Return the new head.\n\n📌 Example 1\nInput:  [2, 3, 4, 5], X = 1\nOutput: [1, 2, 3, 4, 5]\nExplanation: Node with value 1 is inserted before the current head (2).\n\n📌 Example 2\nInput:  [], X = 10\nOutput: [10]\nExplanation: List is empty; new node becomes the head.",
+    "approaches": [
+      {
+        "name": "Solution",
+        "time": "O(1) -- constant-time pointer update.",
+        "space": "O(1) -- no extra space beyond the new node."
+      }
+    ],
     "complexity": {
-      "time": "",
-      "space": ""
+      "time": "O(1) -- constant-time pointer update.",
+      "space": "O(1) -- no extra space beyond the new node."
     },
-    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode() : data(0), next(nullptr) {}\n\n    ListNode(int x) : data(x), next(nullptr) {}\n\n    ListNode(int x, ListNode *next) : data(x), next(next) {}\n};\n\nclass Solution {\n  public:\n    ListNode *insertAtHead(ListNode *&head, int X) {\n        if (head == nullptr) {\n            return new ListNode(X);\n        }\n\n        return new ListNode(X, head);\n    }\n};\n\nvoid printList(ListNode *head) {\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr)\n            cout << \" -> \";\n        current = current->next;\n    }\n    cout << endl;\n}\n\nint main() {\n    // Create linked list: 2 -> 3 -> 4 -> 5\n    ListNode *head = new ListNode(2);\n    head->next = new ListNode(3);\n    head->next->next = new ListNode(4);\n    head->next->next->next = new ListNode(5);\n\n    cout << \"Original List: \";\n    printList(head);\n\n    Solution sol;\n    head = sol.insertAtHead(head, 1);\n\n    cout << \"After inserting 1 at head: \";\n    printList(head);\n\n    // Cleanup\n    ListNode *current = head;\n    while (current != nullptr) {\n        ListNode *temp = current;\n        current = current->next;\n        delete temp;\n    }\n\n    return 0;\n}",
+    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass ListNode {\n  public:\n    int data;\n    ListNode *next;\n\n    ListNode(int x) : data(x), next(nullptr) {}\n};\n\nListNode *buildList(const vector<int> &values) {\n    if (values.empty()) {\n        return nullptr;\n    }\n    ListNode *head = new ListNode(values[0]);\n    ListNode *current = head;\n    for (int i = 1; i < (int)values.size(); i++) {\n        current->next = new ListNode(values[i]);\n        current = current->next;\n    }\n    return head;\n}\n\nvoid printList(ListNode *head) {\n    cout << \"[\";\n    ListNode *current = head;\n    while (current != nullptr) {\n        cout << current->data;\n        if (current->next != nullptr) {\n            cout << \", \";\n        }\n        current = current->next;\n    }\n    cout << \"]\";\n}\n\nvoid deleteList(ListNode *head) {\n    while (head != nullptr) {\n        ListNode *temp = head;\n        head = head->next;\n        delete temp;\n    }\n}\n\nclass Solution {\n  public:\n    /* Create a new node, point its next to the current head,\n       and return it as the new head. */\n    ListNode *insertAtHead(ListNode *head, int X) {\n        ListNode *newNode = new ListNode(X);\n        newNode->next = head;\n        return newNode;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(1) -- constant-time pointer update.\n    Space Complexity: O(1) -- no extra space beyond the new node.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    ListNode *head1 = buildList({2, 3, 4, 5});\n    cout << \"Input: \";\n    printList(head1);\n    head1 = solution.insertAtHead(head1, 1);\n    cout << \" -> After inserting 1 at head: \";\n    printList(head1);\n    cout << endl;\n    deleteList(head1);\n\n    /* Example 2 */\n    ListNode *head2 = nullptr;\n    cout << \"Input: \";\n    printList(head2);\n    head2 = solution.insertAtHead(head2, 10);\n    cout << \" -> After inserting 10 at head: \";\n    printList(head2);\n    cout << endl;\n    deleteList(head2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/linked_lists/insert_node_at_head_sll.cpp"
   },
   {
