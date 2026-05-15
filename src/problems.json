@@ -1682,19 +1682,19 @@
     "subcategory": "",
     "category": "Trees",
     "difficulty": "",
-    "description": "",
+    "description": "Find Height of a Binary Tree\n\nGiven the root of a binary tree, return its height. The height is the\nnumber of edges on the longest path from the root to a leaf node.\n\n📌 Example 1\nInput:  root = [5, 3, 8, 2, 4, 6, 10]\nOutput: 2\nExplanation: Longest path has 2 edges (e.g. 5 → 3 → 2).\n\n📌 Example 2\nInput:  root = [1]\nOutput: 0\nExplanation: Single node — height is 0.",
     "approaches": [
       {
         "name": "Solution",
-        "time": "O(n), where n is the number of nodes in the tree.",
-        "space": "O(h), where h is the height of the tree."
+        "time": "O(N) -- visit every node exactly once.",
+        "space": "O(N) -- recursion stack in the worst case (skewed tree)."
       }
     ],
     "complexity": {
-      "time": "O(n), where n is the number of nodes in the tree.",
-      "space": "O(h), where h is the height of the tree."
+      "time": "O(N) -- visit every node exactly once.",
+      "space": "O(N) -- recursion stack in the worst case (skewed tree)."
     },
-    "code": "#include <iostream>\n#include <algorithm>\n\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node *left;\n    Node *right;\n\n    Node(int value) {\n        data = value;\n        left = nullptr;\n        right = nullptr;\n    }\n};\n\nint findHeight(Node *root);\n\nint main() {\n    // Creating the Binary Tree\n    Node *root = new Node(5);\n    root->left = new Node(3);\n    root->right = new Node(8);\n    root->left->left = new Node(2);\n    root->left->right = new Node(4);\n    root->right->left = new Node(6);\n    root->right->right = new Node(10);\n\n    // Find and print the height of the Binary Tree\n    int height = findHeight(root);\n    std::cout << \"Height of Binary Tree: \" << height << std::endl;\n\n    return 0;\n}\n\n/*\nComplexity Analysis:\nTime Complexity: O(n), where n is the number of nodes in the tree.\nSpace Complexity: O(h), where h is the height of the tree. \n*/\n// Function to find the height of Binary Tree\nint findHeight(Node *node) {\n    if (node == nullptr) {\n        return -1; // Height of an empty tree is -1\n    }\n\n    // Recursively find the height of left and right subtrees\n    int leftHeight = findHeight(node->left);\n    int rightHeight = findHeight(node->right);\n\n    // Return the maximum of heights of left and right subtrees, plus 1 for the current node\n    return 1 + max(leftHeight, rightHeight);\n}",
+    "code": "#include <algorithm>\n#include <iostream>\n#include <queue>\n#include <vector>\n\nusing namespace std;\n\nclass TreeNode {\n  public:\n    int data;\n    TreeNode *left;\n    TreeNode *right;\n\n    TreeNode(int val) : data(val), left(nullptr), right(nullptr) {}\n};\n\nTreeNode *buildTree(const vector<int> &values) {\n    if (values.empty() || values[0] == -1) {\n        return nullptr;\n    }\n    TreeNode *root = new TreeNode(values[0]);\n    queue<TreeNode *> q;\n    q.push(root);\n    int i = 1;\n    while (!q.empty() && i < (int)values.size()) {\n        TreeNode *current = q.front();\n        q.pop();\n        if (i < (int)values.size() && values[i] != -1) {\n            current->left = new TreeNode(values[i]);\n            q.push(current->left);\n        }\n        i++;\n        if (i < (int)values.size() && values[i] != -1) {\n            current->right = new TreeNode(values[i]);\n            q.push(current->right);\n        }\n        i++;\n    }\n    return root;\n}\n\nvoid deleteTree(TreeNode *root) {\n    if (root == nullptr) {\n        return;\n    }\n    deleteTree(root->left);\n    deleteTree(root->right);\n    delete root;\n}\n\nclass Solution {\n  public:\n    /* Recursively compute the height of left and right subtrees,\n       return 1 + max of both. An empty tree has height -1. */\n    int findHeight(TreeNode *root) {\n        if (root == nullptr) {\n            return -1;\n        }\n\n        int leftHeight = findHeight(root->left);\n        int rightHeight = findHeight(root->right);\n\n        return 1 + max(leftHeight, rightHeight);\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- visit every node exactly once.\n    Space Complexity: O(N) -- recursion stack in the worst case (skewed tree).\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    TreeNode *root1 = buildTree({5, 3, 8, 2, 4, 6, 10});\n    cout << \"Height: \" << solution.findHeight(root1) << endl;\n    deleteTree(root1);\n\n    /* Example 2 */\n    TreeNode *root2 = buildTree({1});\n    cout << \"Height: \" << solution.findHeight(root2) << endl;\n    deleteTree(root2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/trees/find_height.cpp"
   },
   {
