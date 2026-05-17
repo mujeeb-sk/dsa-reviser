@@ -2056,19 +2056,19 @@
     "subcategory": "",
     "category": "Trees",
     "difficulty": "",
-    "description": "",
+    "description": "Symmetrical Tree\n\nGiven the root of a binary tree, check whether it is a mirror of itself\n(i.e., symmetric around its centre).\n\n📌 Example 1\nInput:  root = [5, 3, 3, 2, 4, 4, 2]\nOutput: true\nExplanation: Left and right subtrees are mirror images.\n\n📌 Example 2\nInput:  root = [1, 2, 2, -1, 3, -1, 3]\nOutput: false\nExplanation: Both right children are 3 — not a mirror.",
     "approaches": [
       {
         "name": "Solution",
-        "time": "O(N)",
-        "space": "O(N)"
+        "time": "O(N) -- visit every node exactly once.",
+        "space": "O(N) -- recursion stack in the worst case (skewed tree)."
       }
     ],
     "complexity": {
-      "time": "O(N)",
-      "space": "O(N)"
+      "time": "O(N) -- visit every node exactly once.",
+      "space": "O(N) -- recursion stack in the worst case (skewed tree)."
     },
-    "code": "#include <iostream>\n\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node *left;\n    Node *right;\n\n    Node(int value) : data(value), left(nullptr), right(nullptr) {}\n};\n\nbool isSymmetricalTree(Node *root);\nbool isSymmetricalTreeHelper(Node *left, Node *right);\n\nint main() {\n    Node *root = new Node(5);\n    root->left = new Node(3);\n    root->right = new Node(3);\n    root->left->left = new Node(2);\n    root->left->right = new Node(4);\n    root->right->left = new Node(4);\n    root->right->right = new Node(2);\n\n    if (isSymmetricalTree(root)) {\n        cout << \"Symmetrical Tree\" << endl;\n    } else {\n        cout << \"Unsymmetrical Tree\" << endl;\n    }\n\n    return 0;\n}\n\n/*\nComplexity Analysis\n\nTime Complexity : O(N)\nSpace Complexity : O(N)\n*/\nbool isSymmetricalTree(Node *root) { return root == nullptr || isSymmetricalTreeHelper(root->left, root->right); }\n\nbool isSymmetricalTreeHelper(Node *left, Node *right) {\n    if (left == nullptr || right == nullptr) {\n        return left == right;\n    }\n\n    if (left->data != right->data) {\n        return false;\n    }\n\n    return isSymmetricalTreeHelper(left->left, right->right) && isSymmetricalTreeHelper(left->right, right->left);\n}",
+    "code": "#include <iostream>\n#include <queue>\n#include <vector>\n\nusing namespace std;\n\nclass TreeNode {\n  public:\n    int data;\n    TreeNode *left;\n    TreeNode *right;\n\n    TreeNode(int val) : data(val), left(nullptr), right(nullptr) {}\n};\n\nTreeNode *buildTree(const vector<int> &values) {\n    if (values.empty() || values[0] == -1) {\n        return nullptr;\n    }\n    TreeNode *root = new TreeNode(values[0]);\n    queue<TreeNode *> q;\n    q.push(root);\n    int i = 1;\n    while (!q.empty() && i < (int)values.size()) {\n        TreeNode *current = q.front();\n        q.pop();\n        if (i < (int)values.size() && values[i] != -1) {\n            current->left = new TreeNode(values[i]);\n            q.push(current->left);\n        }\n        i++;\n        if (i < (int)values.size() && values[i] != -1) {\n            current->right = new TreeNode(values[i]);\n            q.push(current->right);\n        }\n        i++;\n    }\n    return root;\n}\n\nvoid deleteTree(TreeNode *root) {\n    if (root == nullptr) {\n        return;\n    }\n    deleteTree(root->left);\n    deleteTree(root->right);\n    delete root;\n}\n\nclass Solution {\n  public:\n    /* A tree is symmetric if its left and right subtrees are mirrors.\n       Compare outer pairs (left-left vs right-right) and inner pairs\n       (left-right vs right-left) recursively. */\n    bool isSymmetric(TreeNode *root) { return root == nullptr || isMirror(root->left, root->right); }\n\n  private:\n    bool isMirror(TreeNode *left, TreeNode *right) {\n        if (left == nullptr || right == nullptr) {\n            return left == right;\n        }\n\n        if (left->data != right->data) {\n            return false;\n        }\n\n        return isMirror(left->left, right->right) && isMirror(left->right, right->left);\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- visit every node exactly once.\n    Space Complexity: O(N) -- recursion stack in the worst case (skewed tree).\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 — symmetric */\n    TreeNode *root1 = buildTree({5, 3, 3, 2, 4, 4, 2});\n    cout << \"Symmetric: \" << (solution.isSymmetric(root1) ? \"true\" : \"false\") << endl;\n    deleteTree(root1);\n\n    /* Example 2 — not symmetric */\n    TreeNode *root2 = buildTree({1, 2, 2, -1, 3, -1, 3});\n    cout << \"Symmetric: \" << (solution.isSymmetric(root2) ? \"true\" : \"false\") << endl;\n    deleteTree(root2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/trees/symmetrical_tree.cpp"
   },
   {
