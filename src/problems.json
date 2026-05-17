@@ -2012,19 +2012,19 @@
     "subcategory": "",
     "category": "Trees",
     "difficulty": "",
-    "description": "2236. Root Equals Sum of Children\n\nYou are given the root of a binary tree that consists of exactly 3 nodes: the root, its left child, and its right child.\nReturn true if the value of the root is equal to the sum of the values of its two children, or false otherwise.\n\nInput: root = [10,4,6]\nOutput: true\nExplanation: The values of the root, its left child, and its right child are 10, 4, and 6, respectively.\n10 is equal to 4 + 6, so we return true.\n\nInput: root = [5,3,1]\nOutput: false\nExplanation: The values of the root, its left child, and its right child are 5, 3, and 1, respectively.\n5 is not equal to 3 + 1, so we return false.\n\nThe tree consists only of the root, its left child, and its right child.\n-100 <= Node.val <= 100",
+    "description": "Root Equals Sum of Children\n\nGiven the root of a binary tree with exactly 3 nodes (root, left child,\nright child), return true if the root's value equals the sum of its two\nchildren's values.\n\n📌 Example 1\nInput:  root = [10, 4, 6]\nOutput: true\nExplanation: 10 == 4 + 6.\n\n📌 Example 2\nInput:  root = [5, 3, 1]\nOutput: false\nExplanation: 5 != 3 + 1.",
     "approaches": [
       {
         "name": "Solution",
-        "time": "O(1), No traversal is needed; only direct comparisons of the three nodes.",
-        "space": "O(1), No extra data structures are used."
+        "time": "O(1) -- only three nodes are accessed.",
+        "space": "O(1) -- no extra space."
       }
     ],
     "complexity": {
-      "time": "O(1), No traversal is needed; only direct comparisons of the three nodes.",
-      "space": "O(1), No extra data structures are used."
+      "time": "O(1) -- only three nodes are accessed.",
+      "space": "O(1) -- no extra space."
     },
-    "code": "#include <iostream>\n\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node *left;\n    Node *right;\n\n    Node(int value) : data(value), left(nullptr), right(nullptr) {}\n};\n\nbool checkTree(Node *root);\n\nint main() {\n    Node *root = new Node(3);\n    root->left = new Node(1);\n    root->right = new Node(2);\n\n    cout << \"Is root equals sum of children? : \" << checkTree(root) << endl;\n\n    return 0;\n}\n\n/*\nComplexity Analysis\n\nTime Complexity: O(1), No traversal is needed; only direct comparisons of the three nodes.\nSpace Complexity: O(1), No extra data structures are used.\n*/\nbool checkTree(Node *root) { return root->data == root->left->data + root->right->data; }",
+    "code": "#include <iostream>\n#include <queue>\n#include <vector>\n\nusing namespace std;\n\nclass TreeNode {\n  public:\n    int data;\n    TreeNode *left;\n    TreeNode *right;\n\n    TreeNode(int val) : data(val), left(nullptr), right(nullptr) {}\n};\n\nTreeNode *buildTree(const vector<int> &values) {\n    if (values.empty() || values[0] == -1) {\n        return nullptr;\n    }\n    TreeNode *root = new TreeNode(values[0]);\n    queue<TreeNode *> q;\n    q.push(root);\n    int i = 1;\n    while (!q.empty() && i < (int)values.size()) {\n        TreeNode *current = q.front();\n        q.pop();\n        if (i < (int)values.size() && values[i] != -1) {\n            current->left = new TreeNode(values[i]);\n            q.push(current->left);\n        }\n        i++;\n        if (i < (int)values.size() && values[i] != -1) {\n            current->right = new TreeNode(values[i]);\n            q.push(current->right);\n        }\n        i++;\n    }\n    return root;\n}\n\nvoid deleteTree(TreeNode *root) {\n    if (root == nullptr) {\n        return;\n    }\n    deleteTree(root->left);\n    deleteTree(root->right);\n    delete root;\n}\n\nclass Solution {\n  public:\n    /* Simply check if root value equals left + right. */\n    bool checkTree(TreeNode *root) { return root->data == root->left->data + root->right->data; }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(1) -- only three nodes are accessed.\n    Space Complexity: O(1) -- no extra space.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    TreeNode *root1 = buildTree({10, 4, 6});\n    cout << \"Check: \" << (solution.checkTree(root1) ? \"true\" : \"false\") << endl;\n    deleteTree(root1);\n\n    /* Example 2 */\n    TreeNode *root2 = buildTree({5, 3, 1});\n    cout << \"Check: \" << (solution.checkTree(root2) ? \"true\" : \"false\") << endl;\n    deleteTree(root2);\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/trees/root_equals_sum_of_children.cpp"
   },
   {
