@@ -1458,13 +1458,19 @@
     "subcategory": "",
     "category": "Misc",
     "difficulty": "",
-    "description": "",
-    "approaches": [],
+    "description": "Character Count\n\nGiven a string, count the frequency of each character and print\nthe results.\n\n📌 Example 1\nInput:  \"hello\"\nOutput: h:1, e:1, l:2, o:1\n\n📌 Example 2\nInput:  \"aab\"\nOutput: a:2, b:1",
+    "approaches": [
+      {
+        "name": "Solution",
+        "time": "O(N) -- iterate through string once.",
+        "space": "O(K) -- K = number of unique characters."
+      }
+    ],
     "complexity": {
-      "time": "",
-      "space": ""
+      "time": "O(N) -- iterate through string once.",
+      "space": "O(K) -- K = number of unique characters."
     },
-    "code": "#include <iostream>\n#include <string>\n#include <unordered_map>\n\nusing namespace std;\n\nint main() {\n    string text;\n    cout << \"Enter a string : \";\n    cin >> text;\n\n    unordered_map<char, int> charCount;\n\n    for (char ch : text) {\n        charCount[ch]++;\n    }\n\n    for (const auto &pair : charCount) {\n        std::cout << \"'\" << pair.first << \"': \" << pair.second << std::endl;\n    }\n\n    return 0;\n}",
+    "code": "#include <iostream>\n#include <string>\n#include <unordered_map>\n\nusing namespace std;\n\nclass Solution {\n  public:\n    /* Use a hashmap to count character frequencies. */\n    unordered_map<char, int> countChars(const string &text) {\n        unordered_map<char, int> charCount;\n        for (char ch : text) {\n            charCount[ch]++;\n        }\n        return charCount;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- iterate through string once.\n    Space Complexity: O(K) -- K = number of unique characters.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    string text1 = \"hello\";\n    auto result1 = solution.countChars(text1);\n    cout << \"Char count for \\\"\" << text1 << \"\\\": \";\n    for (const auto &pair : result1) {\n        cout << pair.first << \":\" << pair.second << \" \";\n    }\n    cout << endl;\n\n    /* Example 2 */\n    string text2 = \"aab\";\n    auto result2 = solution.countChars(text2);\n    cout << \"Char count for \\\"\" << text2 << \"\\\": \";\n    for (const auto &pair : result2) {\n        cout << pair.first << \":\" << pair.second << \" \";\n    }\n    cout << endl;\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/misc/character_count.cpp"
   },
   {
@@ -1474,19 +1480,19 @@
     "subcategory": "",
     "category": "Misc",
     "difficulty": "",
-    "description": "",
+    "description": "Coin Change\n\nGiven an array of coin denominations and a target amount, return the\nminimum number of coins needed to make that amount. Return -1 if it\ncannot be made. You may use each coin denomination unlimited times.\n\n📌 Example 1\nInput:  coins = [1, 3, 4], amount = 6\nOutput: 2  (3 + 3)\n\n📌 Example 2\nInput:  coins = [2], amount = 3\nOutput: -1",
     "approaches": [
       {
         "name": "Solution",
-        "time": "O(amount*numCoins)",
-        "space": "O(N) -> dp array"
+        "time": "O(amount * N) -- N = number of coin types.",
+        "space": "O(amount) -- dp array."
       }
     ],
     "complexity": {
-      "time": "O(amount*numCoins)",
-      "space": "O(N) -> dp array"
+      "time": "O(amount * N) -- N = number of coin types.",
+      "space": "O(amount) -- dp array."
     },
-    "code": "#include <iostream>\n#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nint coinChange(vector<int> coins, int amount);\n\nint main() { cout << coinChange({1, 3, 4}, 6) << endl; }\n\n/*\nComplexity Analysis:\n\nTime Complexity : O(amount*numCoins)\nSpace Complexity : O(N) -> dp array\n*/\nint coinChange(vector<int> coins, int amount) {\n\n    if (amount == 0) {\n        return 0;\n    }\n    if (coins.empty()) {\n        return -1;\n    }\n\n    vector<int> dp(amount + 1, amount + 1);\n    dp[0] = 0;\n\n    for (int a = 1; a <= amount; ++a) {\n        for (const auto coin : coins) {\n            if (coin <= a) {\n                dp[a] = min(dp[a], dp[a - coin] + 1);\n            }\n        }\n    }\n\n    return dp[amount] > amount ? -1 : dp[amount];\n}",
+    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass Solution {\n  public:\n    /* Bottom-up DP: dp[a] = min coins to make amount a.\n       For each amount from 1..target, try each coin and\n       take the minimum. */\n    int coinChange(vector<int> &coins, int amount) {\n        if (amount == 0) {\n            return 0;\n        }\n        if (coins.empty()) {\n            return -1;\n        }\n\n        vector<int> dp(amount + 1, amount + 1);\n        dp[0] = 0;\n\n        for (int a = 1; a <= amount; a++) {\n            for (const int coin : coins) {\n                if (coin <= a) {\n                    dp[a] = min(dp[a], dp[a - coin] + 1);\n                }\n            }\n        }\n\n        return dp[amount] > amount ? -1 : dp[amount];\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(amount * N) -- N = number of coin types.\n    Space Complexity: O(amount) -- dp array.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    vector<int> coins1 = {1, 3, 4};\n    cout << \"Min coins: \" << solution.coinChange(coins1, 6) << endl;\n\n    /* Example 2 */\n    vector<int> coins2 = {2};\n    cout << \"Min coins: \" << solution.coinChange(coins2, 3) << endl;\n\n    return 0;\n}",
     "filePath": "src/coding_exercises/misc/coin_change.cpp"
   },
   {
