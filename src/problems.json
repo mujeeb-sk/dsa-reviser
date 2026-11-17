@@ -1512,6 +1512,28 @@
     "filePath": "src/coding_exercises/helloWorld.cpp"
   },
   {
+    "id": "largest_odd_number_in_string",
+    "title": "Largest Odd Number In String",
+    "topic": "Strings",
+    "subcategory": "Easy",
+    "category": "Strings — Easy",
+    "difficulty": "Easy",
+    "description": "Largest Odd Number in a String\n\nGiven a string s representing a large integer (possibly with leading\nzeros), return the largest-valued odd integer that is a substring of s.\nThe result must not have leading zeros. Return \"\" if no odd number exists.\n\n📌 Example 1\nInput:  s = \"5347\"\nOutput: \"5347\"\n\n📌 Example 2\nInput:  s = \"0214638\"\nOutput: \"21463\"\n\n📌 Example 3\nInput:  s = \"0246\"\nOutput: \"\"",
+    "approaches": [
+      {
+        "name": "Optimal Approach (Greedy)",
+        "time": "O(N) -- at most one pass from each end of the string.",
+        "space": "O(1) -- excluding the returned substring."
+      }
+    ],
+    "complexity": {
+      "time": "O(N) -- at most one pass from each end of the string.",
+      "space": "O(1) -- excluding the returned substring."
+    },
+    "code": "#include <iostream>\n#include <string>\n\nusing namespace std;\n\nclass Solution {\n  public:\n    /* Optimal Approach (Greedy):\n       Find the rightmost odd digit as the end, then skip leading zeros\n       from the left to get the start. */\n    string largeOddNum(const string &s) {\n        int n = (int)s.size();\n        int end = -1;\n\n        // Rightmost odd digit gives the longest odd substring\n        for (int i = n - 1; i >= 0; i--) {\n            if ((s[i] - '0') % 2 != 0) {\n                end = i;\n                break;\n            }\n        }\n\n        if (end == -1) {\n            return \"\";\n        }\n\n        // Skip leading zeros (s[end] is odd, so this stops at or before end)\n        int start = 0;\n        while (start < end && s[start] == '0') {\n            start++;\n        }\n\n        return s.substr(start, end - start + 1);\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- at most one pass from each end of the string.\n    Space Complexity: O(1) -- excluding the returned substring.\n    */\n};\n\nint main() {\n    Solution solution;\n\n    /* Example 1 */\n    string s1 = \"5347\";\n    cout << \"Input: \\\"\" << s1 << \"\\\" -> Largest Odd: \\\"\" << solution.largeOddNum(s1) << \"\\\"\" << endl;\n\n    /* Example 2 */\n    string s2 = \"0214638\";\n    cout << \"Input: \\\"\" << s2 << \"\\\" -> Largest Odd: \\\"\" << solution.largeOddNum(s2) << \"\\\"\" << endl;\n\n    /* Example 3 */\n    string s3 = \"0246\";\n    cout << \"Input: \\\"\" << s3 << \"\\\" -> Largest Odd: \\\"\" << solution.largeOddNum(s3) << \"\\\"\" << endl;\n\n    return 0;\n}\n",
+    "filePath": "src/coding_exercises/strings/easy/largest_odd_number_in_string.cpp"
+  },
+  {
     "id": "balanced_binary_tree_or_not",
     "title": "Balanced Binary Tree Or Not",
     "topic": "Trees",
