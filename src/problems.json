@@ -570,6 +570,33 @@
     "filePath": "src/coding_exercises/arrays/medium/two_sum.cpp"
   },
   {
+    "id": "search_insert_position",
+    "title": "Search Insert Position",
+    "topic": "Binary Search",
+    "subcategory": "Easy",
+    "category": "Binary Search — Easy",
+    "difficulty": "Easy",
+    "description": "Search Insert Position\n\nGiven a sorted array of distinct integers and a target value, return the\nindex of the target if it is found. Otherwise, return the index where it\nwould be inserted to keep the array sorted.\n\n📌 Example 1\nInput:  [1, 3, 5, 6], target = 5\nOutput: 2\nExplanation: 5 is found at index 2.\n\n📌 Example 2\nInput:  [1, 3, 5, 6], target = 2\nOutput: 1\nExplanation: 2 is not found; inserting it at index 1 keeps the array sorted.\n\n📌 Example 3\nInput:  [1, 3, 5, 6], target = 7\nOutput: 4\nExplanation: 7 is larger than every element, so it goes at the end.",
+    "approaches": [
+      {
+        "name": "Brute Force Approach (Linear Search)",
+        "time": "O(N) -- may scan the whole array.",
+        "space": "O(1) -- no extra space."
+      },
+      {
+        "name": "Optimal Approach (Binary Search)",
+        "time": "O(log N) -- search space halves on every iteration.",
+        "space": "O(1) -- only a few index variables."
+      }
+    ],
+    "complexity": {
+      "time": "O(log N) -- search space halves on every iteration.",
+      "space": "O(1) -- only a few index variables."
+    },
+    "code": "#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nclass Solution {\n  public:\n    /* Brute Force Approach (Linear Search):\n       Scan from the left and return the first index whose value is\n       >= target. If no such index exists, the target goes at the end. */\n    int searchInsert(const vector<int> &nums, int target) {\n        int n = (int)nums.size();\n\n        for (int i = 0; i < n; i++) {\n            if (nums[i] >= target) {\n                return i;\n            }\n        }\n\n        return n;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(N) -- may scan the whole array.\n    Space Complexity: O(1) -- no extra space.\n    */\n};\n\nclass Solution2 {\n  public:\n    /* Optimal Approach (Binary Search):\n       Find the lower bound: the first index whose value is >= target.\n       Record each such mid as a candidate and keep searching left for\n       a smaller one. */\n    int searchInsert(const vector<int> &nums, int target) {\n        int n = (int)nums.size();\n        int low = 0;\n        int high = n - 1;\n        int ans = n; // Default: target is larger than every element\n\n        while (low <= high) {\n            int mid = low + (high - low) / 2; // Avoids int overflow\n\n            if (nums[mid] >= target) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n\n        return ans;\n    }\n\n    /*\n    Complexity Analysis\n\n    Time Complexity: O(log N) -- search space halves on every iteration.\n    Space Complexity: O(1) -- only a few index variables.\n    */\n};\n\nint main() {\n    Solution2 solution;\n\n    /* Example 1 */\n    vector<int> nums1 = {1, 3, 5, 6};\n    int target1 = 5;\n    cout << \"Input: [1, 3, 5, 6], target = \" << target1 << \" -> Index: \" << solution.searchInsert(nums1, target1)\n         << endl;\n\n    /* Example 2 */\n    vector<int> nums2 = {1, 3, 5, 6};\n    int target2 = 2;\n    cout << \"Input: [1, 3, 5, 6], target = \" << target2 << \" -> Index: \" << solution.searchInsert(nums2, target2)\n         << endl;\n\n    /* Example 3 */\n    vector<int> nums3 = {1, 3, 5, 6};\n    int target3 = 7;\n    cout << \"Input: [1, 3, 5, 6], target = \" << target3 << \" -> Index: \" << solution.searchInsert(nums3, target3)\n         << endl;\n\n    return 0;\n}\n",
+    "filePath": "src/coding_exercises/binary_search/easy/search_insert_position.cpp"
+  },
+  {
     "id": "add_two_numbers_linked_list",
     "title": "Add Two Numbers Linked List",
     "topic": "Linked Lists",
